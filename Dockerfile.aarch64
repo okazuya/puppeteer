@@ -1,0 +1,39 @@
+FROM node:16.19-alpine3.17 AS base
+
+WORKDIR /usr/src/app
+
+# https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md#running-puppeteer-in-docker
+# https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md#running-on-alpine
+# Installs latest Chromium (108.0.5359.125) package.
+
+RUN apk add --no-cache \
+      chromium \
+      nss \
+      ca-certificates \
+    && rm -rf /tmp/* \
+    && addgroup -S pptruser && adduser -S -G pptruser pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser \
+    && chown -R pptruser:pptruser /usr/src/app
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+USER pptruser
+
+CMD ["sh"]
+
+# https://pptr.dev/faq/#q-which-chromium-version-does-puppeteer-use
+# https://github.com/puppeteer/puppeteer/blob/main/versions.js
+# Puppeteer v19.2.0 works with Chromium 108.0.5351.0.
+
+#====================================================
+FROM base AS puppeteer
+RUN npm i puppeteer@19.2.2
+#====================================================
+
+#====================================================
+FROM base AS puppeteer-mongodb
+RUN npm i puppeteer@19.2.2 \
+          mongodb@4.13.0
+#====================================================
